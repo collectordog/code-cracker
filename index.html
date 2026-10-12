@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Code Cracker</title>
+<style>
+  :root {
+    --bg: #0f1020;
+    --bg2: #1a1b33;
+    --panel: #1e2040;
+    --panel2: #272a52;
+    --accent: #ffcb05;
+    --accent2: #ff6b6b;
+    --good: #3ddc97;
+    --text: #f4f5ff;
+    --muted: #9aa0c7;
+    --danger: #ff5470;
+    --radius: 18px;
+    --shadow: 0 12px 40px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 800px at 20% -10%, #2a2d5c 0%, var(--bg) 55%),
+                radial-gradient(900px 700px at 110% 110%, #3a1d4d 0%, transparent 60%);
+    color: var(--text);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 48px;
+    min-height: 100%;
+  }
+  .app { width: 100%; max-width: 560px; }
+  .screen { display: none; animation: fade .35s ease; }
+  .screen.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .brand { text-align: center; margin: 6px 0 22px; }
+  .brand h1 {
+    font-size: clamp(34px, 9vw, 52px);
+    margin: 0;
+    letter-spacing: 2px;
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--accent), #ff9f1c, var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 30px rgba(255,203,5,.15);
+  }
+  .brand p { margin: 6px 0 0; color: var(--muted); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel), var(--bg2));
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  label.fieldlabel { display: block; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+
+  input[type="text"] {
+    width: 100%;
+    font-size: 22px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,.1);
+    background: rgba(0,0,0,.25);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  /* Location */
+  .loc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .loc-btn {
+    padding: 16px 8px;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: transform .1s, background .15s, border-color .15s;
+  }
+  .loc-btn .ic { font-size: 26px; }
+  .loc-btn:hover { background: rgba(255,255,255,.1); }
+  .loc-btn:active { transform: scale(.96); }
+  .loc-btn.selected { border-color: var(--accent); background: rgba(255,203,5,.18); }
+
+  .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 4px; }
+  @media (max-width: 460px) { .emoji-grid { grid-template-columns: repeat(6, 1fr); } }
+  .emoji-btn {
+    aspect-ratio: 1 / 1;
+    font-size: clamp(22px, 6vw, 30px);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: rgba(255,255,255,.04);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .1s, background .15s, border-color .15s;
+    user-select: none;
+  }
+  .emoji-btn:hover { background: rgba(255,255,255,.1); }
+  .emoji-btn:active { transform: scale(.9); }
+  .emoji-btn.selected { border-color: var(--accent); background: rgba(255,203,5,.18); transform: scale(1.05); }
+
+  .btn {
+    display: block;
+    width: 100%;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    padding: 20px;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    color: #1a1400;
+    background: linear-gradient(180deg, #ffd84d, var(--accent));
+    box-shadow: 0 10px 24px rgba(255,203,5,.35);
+    transition: transform .08s, box-shadow .2s, filter .2s;
+    text-transform: uppercase;
+  }
+  .btn:active { transform: translateY(2px) scale(.99); }
+  .btn:disabled { filter: grayscale(.7) opacity(.5); cursor: not-allowed; box-shadow: none; }
+  .btn.secondary { background: var(--panel2); color: var(--text); box-shadow: none; font-size: 16px; letter-spacing: 2px; padding: 14px; }
+
+  .timerbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; }
+  .player-tag { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; min-width: 0; }
+  .player-tag .em { font-size: 28px; }
+  .player-tag .meta { min-width: 0; }
+  .player-tag .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-tag .loc { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    font-size: 34px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: rgba(0,0,0,.3);
+    padding: 6px 14px;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .lock { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 8px 0 4px; }
+  .dial { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .arrow {
+    width: 100%;
+    font-size: 22px;
+    line-height: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--panel2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background .15s, transform .08s;
+  }
+  .arrow:hover { background: #343878; }
+  .arrow:active { transform: scale(.92); }
+  .digit {
+    width: 100%;
+    text-align: center;
+    font-size: clamp(30px, 10vw, 44px);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    padding: 12px 0;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #000, #15162e);
+    border: 2px solid rgba(255,255,255,.08);
+    box-shadow: inset 0 2px 10px rgba(0,0,0,.6);
+    color: var(--accent);
+  }
+  .lock.shake { animation: shake .4s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-7px); }
+    80% { transform: translateX(7px); }
+  }
+  .lockwrap { position: relative; }
+  .lockout {
+    position: absolute; inset: -6px;
+    background: rgba(10,10,25,.92);
+    border-radius: 16px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 5;
+    backdrop-filter: blur(3px);
+  }
+  .lockout.show { display: flex; }
+  .lockout .big { font-size: 64px; font-weight: 900; color: var(--danger); font-variant-numeric: tabular-nums; }
+  .lockout .lbl { color: var(--muted); letter-spacing: 3px; text-transform: uppercase; font-size: 13px; }
+  .lockout .warn { font-size: 40px; }
+
+  .hint { text-align: center; color: var(--muted); font-size: 13px; margin-top: 14px; }
+
+  .wintime { font-size: 56px; font-weight: 900; color: var(--good); text-align: center; margin: 10px 0; font-variant-numeric: tabular-nums; }
+  .confetti-emoji { text-align: center; font-size: 54px; margin-bottom: 4px; }
+
+  .lb { list-style: none; margin: 6px 0 0; padding: 0; }
+  .lb li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.03); margin-bottom: 8px; }
+  .lb li.me { background: rgba(255,203,5,.14); border: 1px solid rgba(255,203,5,.4); }
+  .lb .rank { font-weight: 900; width: 34px; color: var(--muted); font-size: 18px; }
+  .lb .rank.g1 { color: #ffd700; } .lb .rank.g2 { color: #c0c0c0; } .lb .rank.g3 { color: #cd7f32; }
+  .lb .em { font-size: 26px; }
+  .lb .info { flex: 1; min-width: 0; }
+  .lb .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb .loc { font-size: 12px; color: var(--muted); }
+  .lb .tm { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); }
+  .lb-empty { color: var(--muted); text-align: center; padding: 16px; }
+
+  .sectiontitle { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px; display:flex; justify-content: space-between; align-items:center;}
+  .link { color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; }
+
+  .filterbar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filterbar button { flex: 1; min-width: 70px; padding: 8px; border: 1px solid rgba(255,255,255,.1); background: transparent; color: var(--muted); border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .filterbar button.active { background: rgba(255,203,5,.15); color: var(--accent); border-color: var(--accent); }
+
+  .gear { position: fixed; top: 10px; right: 12px; font-size: 20px; opacity: .25; cursor: pointer; z-index: 20; }
+  .gear:hover { opacity: .8; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index: 30; padding: 20px;}
+  .modal.show { display: flex; }
+  .modal .box { background: var(--panel); border-radius: 16px; padding: 22px; max-width: 360px; width: 100%; box-shadow: var(--shadow); }
+  .modal h3 { margin: 0 0 14px; }
+  .modal p { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="gear" id="gear" title="Organisator-instellingen">⚙️</div>
+<div class="app">
+
+  <div class="brand">
+    <h1>CODE&nbsp;CRACKER</h1>
+    <p>Kraak het 6-cijferige slot • snelste wint</p>
+  </div>
+
+  <!-- SETUP -->
+  <section id="setup" class="screen active">
+    <div class="card">
+      <label class="fieldlabel" for="teamname">Teamnaam</label>
+      <input id="teamname" type="text" maxlength="24" placeholder="Vul je teamnaam in…" autocomplete="off" />
+    </div>
+    <div class="card">
+      <label class="fieldlabel">Kies locatie</label>
+      <div class="loc-grid" id="locGrid">
+        <button class="loc-btn" type="button" data-loc="Vuurtoren"><span class="ic">🗼</span>Vuurtoren</button>
+        <button class="loc-btn" type="button" data-loc="Balans"><span class="ic">⚖️</span>Balans</button>
+        <button class="loc-btn" type="button" data-loc="Kompas"><span class="ic">🧭</span>Kompas</button>
+      </div>
+    </div>
+    <div class="card">
+      <label class="fieldlabel">Kies je emoji</label>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <button class="btn" id="startBtn" disabled>START</button>
+    <div class="hint">Kies een naam, locatie en emoji om te beginnen.</div>
+
+    <div class="card" style="margin-top:22px;">
+      <div class="sectiontitle"><span>🏆 Scorebord</span><span class="link" id="clearLb">wissen</span></div>
+      <div class="filterbar" id="filterSetup"></div>
+      <ul class="lb" id="lbSetup"></ul>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="screen">
+    <div class="timerbar">
+      <div class="player-tag">
+        <span class="em" id="gameEmoji">🙂</span>
+        <span class="meta">
+          <div class="nm" id="gameName">Team</div>
+          <div class="loc" id="gameLoc">Locatie</div>
+        </span>
+      </div>
+      <div class="timer" id="timer">00:00.0</div>
+    </div>
+    <div class="card">
+      <div class="lockwrap">
+        <div class="lock" id="lock"></div>
+        <div class="lockout" id="lockout">
+          <div class="warn">🚫</div>
+          <div class="lbl">Geblokkeerd</div>
+          <div class="big" id="lockoutCount">20</div>
+          <div class="lbl">seconden</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="checkBtn">CHECK CODE</button>
+    <div class="hint" id="attemptHint">Gebruik ▲ / ▼ om elk cijfer in te stellen, druk dan op CHECK.</div>
+  </section>
+
+  <!-- WIN -->
+  <section id="win" class="screen">
+    <div class="card" style="text-align:center;">
+      <div class="confetti-emoji" id="winEmoji">🎉</div>
+      <div class="sectiontitle" style="justify-content:center;">Code gekraakt!</div>
+      <div class="wintime" id="winTime">00:00.0</div>
+      <div class="hint" id="winRank"></div>
+    </div>
+    <div class="card">
+      <div class="sectiontitle"><span>🏆 Scorebord</span></div>
+      <div class="filterbar" id="filterWin"></div>
+      <ul class="lb" id="lbWin"></ul>
+    </div>
+    <button class="btn secondary" id="playAgain">OPNIEUW SPELEN</button>
+  </section>
+
+</div>
+
+<!-- Organisator modal -->
+<div class="modal" id="orgModal">
+  <div class="box">
+    <h3>Organisator-instellingen</h3>
+    <p>Huidige geheime code (alle teams op dit apparaat spelen dezelfde code):</p>
+    <input id="codeInput" type="text" maxlength="6" inputmode="numeric" style="letter-spacing:8px;text-align:center;font-size:28px;" />
+    <p style="font-size:12px;">Laat leeg + Opslaan voor een nieuwe willekeurige code.</p>
+    <button class="btn secondary" id="saveCode" style="margin-top:6px;">CODE OPSLAAN</button>
+    <button class="btn secondary" id="closeOrg" style="margin-top:8px;">SLUITEN</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var EMOJIS = ["🦊","🐱","🐶","🐼","🐸","🦁","🐯","🐵","🐷","🐧",
+                "🦄","🐙","🦉","🐢","🐝","🦋","🐳","🦈","🦖","🐉",
+                "⚡","🔥","💎","🌈","⭐","🚀","🎸","🎯","🎲","🏆",
+                "🍕","🍔","🍩","🌮","🍦","👑","👻","🤖","👽","🎃"];
+
+  var LOCATIONS = ["Vuurtoren", "Balans", "Kompas"];
+
+  var LS_SCORES = "cc_scores_v1";
+  var LS_CODE = "cc_secret_v1";
+
+  var state = {
+    name: "", emoji: "", location: "",
+    digits: [0,0,0,0,0,0],
+    secret: null, startTime: 0, rafId: null,
+    lockedOut: false, lastScoreId: null,
+    filter: "Alle"
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function show(screenId) {
+    ["setup","game","win"].forEach(function (s) { $(s).classList.toggle("active", s === screenId); });
+  }
+  function fmt(ms) {
+    var totalCs = Math.floor(ms / 100);
+    var cs = totalCs % 10;
+    var totalSec = Math.floor(totalCs / 10);
+    var sec = totalSec % 60;
+    var min = Math.floor(totalSec / 60);
+    return (min < 10 ? "0" : "") + min + ":" + (sec < 10 ? "0" : "") + sec + "." + cs;
+  }
+  function getScores() {
+    try { return JSON.parse(localStorage.getItem(LS_SCORES)) || []; } catch (e) { return []; }
+  }
+  function saveScores(arr) {
+    try { localStorage.setItem(LS_SCORES, JSON.stringify(arr)); } catch (e) {}
+  }
+  function getSecret() {
+    var s;
+    try { s = localStorage.getItem(LS_CODE); } catch (e) {}
+    if (!s || !/^\d{6}$/.test(s)) {
+      s = "";
+      for (var i = 0; i < 6; i++) s += Math.floor(Math.random() * 10);
+      try { localStorage.setItem(LS_CODE, s); } catch (e) {}
+    }
+    return s;
+  }
+
+  function buildEmojiGrid() {
+    var grid = $("emojiGrid");
+    grid.innerHTML = "";
+    EMOJIS.forEach(function (em) {
+      var b = document.createElement("button");
+      b.className = "emoji-btn"; b.type = "button"; b.textContent = em;
+      b.addEventListener("click", function () {
+        state.emoji = em;
+        Array.prototype.forEach.call(grid.children, function (c) { c.classList.remove("selected"); });
+        b.classList.add("selected");
+        refreshStartBtn();
+      });
+      grid.appendChild(b);
+    });
+  }
+  function buildLocations() {
+    var grid = $("locGrid");
+    Array.prototype.forEach.call(grid.children, function (b) {
+      b.addEventListener("click", function () {
+        state.location = b.getAttribute("data-loc");
+        Array.prototype.forEach.call(grid.children, function (c) { c.classList.remove("selected"); });
+        b.classList.add("selected");
+        refreshStartBtn();
+      });
+    });
+  }
+  function refreshStartBtn() {
+    $("startBtn").disabled = !(state.name.trim() && state.emoji && state.location);
+  }
+
+  function buildFilter(barId, ulId, highlightId) {
+    var bar = $(barId);
+    bar.innerHTML = "";
+    ["Alle"].concat(LOCATIONS).forEach(function (loc) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = loc;
+      if (loc === state.filter) b.classList.add("active");
+      b.addEventListener("click", function () {
+        state.filter = loc;
+        buildFilter(barId, ulId, highlightId);
+        renderLeaderboard(ulId, highlightId);
+      });
+      bar.appendChild(b);
+    });
+  }
+
+  function renderLeaderboard(ulId, highlightId) {
+    var ul = $(ulId);
+    ul.innerHTML = "";
+    var scores = getScores().slice();
+    if (state.filter !== "Alle") {
+      scores = scores.filter(function (s) { return s.location === state.filter; });
+    }
+    scores.sort(function (a, b) { return a.ms - b.ms; });
+    if (!scores.length) {
+      var li = document.createElement("li");
+      li.className = "lb-empty";
+      li.textContent = "Nog geen scores — wees de eerste!";
+      ul.appendChild(li);
+      return;
+    }
+    scores.slice(0, 10).forEach(function (s, i) {
+      var li = document.createElement("li");
+      if (s.id === highlightId) li.className = "me";
+      var rankCls = i === 0 ? "g1" : i === 1 ? "g2" : i === 2 ? "g3" : "";
+      li.innerHTML =
+        '<span class="rank ' + rankCls + '">' + (i + 1) + '</span>' +
+        '<span class="em"></span>' +
+        '<span class="info"><div class="nm"></div><div class="loc"></div></span>' +
+        '<span class="tm"></span>';
+      li.querySelector(".em").textContent = s.emoji;
+      li.querySelector(".nm").textContent = s.name;
+      li.querySelector(".loc").textContent = s.location || "";
+      li.querySelector(".tm").textContent = fmt(s.ms);
+      ul.appendChild(li);
+    });
+  }
+
+  function buildLock() {
+    var lock = $("lock");
+    lock.innerHTML = "";
+    for (var i = 0; i < 6; i++) {
+      (function (idx) {
+        var dial = document.createElement("div");
+        dial.className = "dial";
+        var up = document.createElement("button");
+        up.className = "arrow"; up.type = "button"; up.textContent = "▲";
+        up.addEventListener("click", function () { changeDigit(idx, 1); });
+        var disp = document.createElement("div");
+        disp.className = "digit"; disp.id = "digit" + idx; disp.textContent = "0";
+        var down = document.createElement("button");
+        down.className = "arrow"; down.type = "button"; down.textContent = "▼";
+        down.addEventListener("click", function () { changeDigit(idx, -1); });
+        dial.appendChild(up); dial.appendChild(disp); dial.appendChild(down);
+        lock.appendChild(dial);
+      })(i);
+    }
+  }
+  function changeDigit(idx, delta) {
+    if (state.lockedOut) return;
+    state.digits[idx] = (state.digits[idx] + delta + 10) % 10;
+    $("digit" + idx).textContent = state.digits[idx];
+  }
+
+  function tick() {
+    $("timer").textContent = fmt(Date.now() - state.startTime);
+    state.rafId = requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    state.name = $("teamname").value.trim();
+    state.digits = [0,0,0,0,0,0];
+    state.secret = getSecret();
+    state.lockedOut = false;
+    buildLock();
+    $("gameName").textContent = state.name;
+    $("gameEmoji").textContent = state.emoji;
+    $("gameLoc").textContent = "📍 " + state.location;
+    $("attemptHint").textContent = "Gebruik ▲ / ▼ om elk cijfer in te stellen, druk dan op CHECK.";
+    $("lockout").classList.remove("show");
+    $("checkBtn").disabled = false;
+    show("game");
+    state.startTime = Date.now();
+    cancelAnimationFrame(state.rafId);
+    tick();
+  }
+
+  function checkCode() {
+    if (state.lockedOut) return;
+    var guess = state.digits.join("");
+    if (guess === state.secret) winGame(); else wrongGuess();
+  }
+
+  function wrongGuess() {
+    var lock = $("lock");
+    lock.classList.remove("shake");
+    void lock.offsetWidth;
+    lock.classList.add("shake");
+    startLockout(20);
+  }
+
+  function startLockout(sec) {
+    state.lockedOut = true;
+    $("checkBtn").disabled = true;
+    var lo = $("lockout");
+    var count = $("lockoutCount");
+    count.textContent = sec;
+    lo.classList.add("show");
+    var remaining = sec;
+    var iv = setInterval(function () {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(iv);
+        lo.classList.remove("show");
+        state.lockedOut = false;
+        $("checkBtn").disabled = false;
+      } else {
+        count.textContent = remaining;
+      }
+    }, 1000);
+  }
+
+  function winGame() {
+    cancelAnimationFrame(state.rafId);
+    var ms = Date.now() - state.startTime;
+    var id = "s" + Date.now() + Math.random().toString(36).slice(2, 7);
+    state.lastScoreId = id;
+    var scores = getScores();
+    scores.push({ id: id, name: state.name, emoji: state.emoji, location: state.location, ms: ms, when: Date.now() });
+    saveScores(scores);
+
+    $("winEmoji").textContent = state.emoji;
+    $("winTime").textContent = fmt(ms);
+
+    var sameLoc = scores.filter(function (s) { return s.location === state.location; })
+                        .sort(function (a, b) { return a.ms - b.ms; });
+    var rank = sameLoc.findIndex(function (s) { return s.id === id; }) + 1;
+    var msg = "Plek #" + rank + " van " + sameLoc.length + " bij " + state.location;
+    if (rank === 1) msg = "🥇 Nieuwe besttijd bij " + state.location + "! (#1 van " + sameLoc.length + ")";
+    $("winRank").textContent = msg;
+
+    state.filter = state.location;
+    buildFilter("filterWin", "lbWin", id);
+    renderLeaderboard("lbWin", id);
+    show("win");
+  }
+
+  function openOrg() { $("codeInput").value = getSecret(); $("orgModal").classList.add("show"); }
+  function closeOrg() { $("orgModal").classList.remove("show"); }
+  function saveCode() {
+    var v = $("codeInput").value.trim();
+    if (v === "") {
+      try { localStorage.removeItem(LS_CODE); } catch (e) {}
+      getSecret();
+    } else if (/^\d{6}$/.test(v)) {
+      try { localStorage.setItem(LS_CODE, v); } catch (e) {}
+    } else {
+      alert("Code moet precies 6 cijfers zijn (0-9).");
+      return;
+    }
+    closeOrg();
+  }
+
+  function init() {
+    buildEmojiGrid();
+    buildLocations();
+    buildFilter("filterSetup", "lbSetup", null);
+    renderLeaderboard("lbSetup", null);
+
+    $("teamname").addEventListener("input", function () { state.name = this.value; refreshStartBtn(); });
+    $("startBtn").addEventListener("click", startGame);
+    $("checkBtn").addEventListener("click", checkCode);
+    $("playAgain").addEventListener("click", function () {
+      $("teamname").value = "";
+      state.name = ""; state.emoji = ""; state.location = "";
+      Array.prototype.forEach.call($("emojiGrid").children, function (c) { c.classList.remove("selected"); });
+      Array.prototype.forEach.call($("locGrid").children, function (c) { c.classList.remove("selected"); });
+      refreshStartBtn();
+      state.filter = "Alle";
+      buildFilter("filterSetup", "lbSetup", state.lastScoreId);
+      renderLeaderboard("lbSetup", state.lastScoreId);
+      show("setup");
+    });
+    $("clearLb").addEventListener("click", function () {
+      if (confirm("Hele scorebord wissen?")) {
+        saveScores([]);
+        renderLeaderboard("lbSetup", null);
+      }
+    });
+
+    $("gear").addEventListener("click", openOrg);
+    $("closeOrg").addEventListener("click", closeOrg);
+    $("saveCode").addEventListener("click", saveCode);
+
+    document.addEventListener("keydown", function (e) {
+      if ($("game").classList.contains("active") && e.key === "Enter") checkCode();
+    });
+
+    getSecret();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
