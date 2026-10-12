@@ -599,7 +599,13 @@
     show("win");
   }
 
-  function openOrg() { $("codeInput").value = getSecret(); $("orgModal").classList.add("show"); }
+  function openOrg() {
+    var pw = prompt("Voer het wachtwoord in om de instellingen te openen:");
+    if (pw === null) return;
+    if (pw !== "JufReny") { alert("Onjuist wachtwoord."); return; }
+    $("codeInput").value = getSecret();
+    $("orgModal").classList.add("show");
+  }
   function closeOrg() { $("orgModal").classList.remove("show"); }
   function saveCode() {
     var v = $("codeInput").value.trim();
