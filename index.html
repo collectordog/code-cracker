@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Code Cracker</title>
+<title>Escaperoom</title>
 <style>
   :root {
     --bg: #0f1020;
@@ -218,6 +218,18 @@
   .lb .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lb .loc { font-size: 12px; color: var(--muted); }
   .lb .tm { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); }
+  .lb .del {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border: none; border-radius: 9px;
+    background: rgba(255,84,112,.15);
+    color: var(--danger);
+    font-size: 20px; font-weight: 700; line-height: 1;
+    cursor: pointer;
+    transition: background .15s, transform .08s;
+  }
+  .lb .del:hover { background: rgba(255,84,112,.32); }
+  .lb .del:active { transform: scale(.9); }
   .lb-empty { color: var(--muted); text-align: center; padding: 16px; }
 
   .sectiontitle { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px; display:flex; justify-content: space-between; align-items:center;}
@@ -242,7 +254,7 @@
 <div class="app">
 
   <div class="brand">
-    <h1>CODE&nbsp;CRACKER</h1>
+    <h1>ESCAPEROOM</h1>
     <p>Kraak het 6-cijferige slot • snelste wint</p>
   </div>
 
@@ -457,8 +469,25 @@
       li.querySelector(".nm").textContent = s.name;
       li.querySelector(".loc").textContent = s.location || "";
       li.querySelector(".tm").textContent = fmt(s.ms);
+
+      var del = document.createElement("button");
+      del.className = "del"; del.type = "button"; del.textContent = "×";
+      del.title = "Verwijder score";
+      del.addEventListener("click", function () {
+        if (confirm('Weet je zeker dat je de score van "' + s.name + '" (' + fmt(s.ms) + ') wilt verwijderen?')) {
+          deleteScore(s.id);
+          renderLeaderboard(ulId, highlightId);
+        }
+      });
+      li.appendChild(del);
+
       ul.appendChild(li);
     });
+  }
+
+  function deleteScore(id) {
+    var scores = getScores().filter(function (s) { return s.id !== id; });
+    saveScores(scores);
   }
 
   function buildLock() {
@@ -607,7 +636,10 @@
       show("setup");
     });
     $("clearLb").addEventListener("click", function () {
-      if (confirm("Hele scorebord wissen?")) {
+      var pw = prompt("Voer het wachtwoord in om het hele scorebord te wissen:");
+      if (pw === null) return;
+      if (pw !== "JufReny") { alert("Onjuist wachtwoord."); return; }
+      if (confirm("Weet je zeker dat je het HELE scorebord wilt wissen?")) {
         saveScores([]);
         renderLeaderboard("lbSetup", null);
       }
